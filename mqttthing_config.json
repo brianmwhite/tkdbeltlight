@@ -1,0 +1,14 @@
+{
+    "type": "switch",
+    "name": "Belt Light",
+    "topics": {
+        "getOn": "home/office/lights/beltlight/getOn",
+        "setOn": "home/office/lights/beltlight/setOn"
+    },
+    "confirmationPeriodms": 1000,
+    "confirmationIndicateOffline": true,
+    "integerValue": false,
+    "onValue": "ON",
+    "offValue": "OFF",
+    "accessory": "mqttthing"
+}
