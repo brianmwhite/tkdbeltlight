@@ -28,6 +28,9 @@ OFF = (0, 0, 0, 0)
 
 pixels_per_strip = 11
 
+last_time_status_check_in = 0
+status_checkin_delay = 5.0
+
 # The callback for when the client receives a CONNACK response from the server.
 def on_connect(client, userdata, flags, rc):
 	print("MQTT: Connected with result code "+str(rc))
@@ -38,6 +41,7 @@ def on_connect(client, userdata, flags, rc):
 
 # The callback for when a PUBLISH message is received from the server.
 def on_message(client, userdata, message):
+	global last_time_status_check_in
 	# print("message received ", str(message.payload.decode("utf-8")))
 	# print("message topic=", message.topic)
 	# print("message qos=", message.qos)
@@ -50,14 +54,17 @@ def on_message(client, userdata, message):
 		elif str(message.payload.decode("utf-8")) == "OFF":
 			turnOffLights()
 			client.publish("home/office/lights/beltlight/getOn","OFF")
+		last_time_status_check_in = time.monotonic()
 
 def turnOffLights():
+	global beltLightIsOn
 	pixels.fill((0, 0, 0, 0))
 	pixels.show()
 	print("turning lights OFF ....")
 	beltLightIsOn = False
 
 def turnOnLights():
+	global beltLightIsOn	
 	print("turning lights ON ....")
 	beltLightIsOn = True
 
@@ -93,12 +100,22 @@ client.on_message = on_message
 client.connect("pihome.local", 1883, 60)
 client.subscribe("home/office/lights/beltlight/setOn")
 client.publish("home/office/lights/beltlight/getOn","OFF")
+turnOffLights()
+last_time_status_check_in = time.monotonic()
 
 client.loop_start()
 
 try:
+
 	while True:
-		time.sleep(1)
+		current_seconds_count = time.monotonic()
+		if current_seconds_count - last_time_status_check_in > status_checkin_delay:
+			last_time_status_check_in = current_seconds_count
+			if beltLightIsOn:
+				client.publish("home/office/lights/beltlight/getOn","ON")
+			else:
+				client.publish("home/office/lights/beltlight/getOn","OFF")
+
 except KeyboardInterrupt:
 	pass
 
