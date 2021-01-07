@@ -108,10 +108,15 @@ turnOffLights()
 last_time_status_check_in = time.monotonic()
 
 client.loop_start()
+# see below, not sure if sleep is needed here, probably not
+time.sleep(0.001)
 
 try:
 
 	while True:
+		# added time.sleep 1 ms after seeing 100% CPU usage
+		# found this solution https://stackoverflow.com/a/41749754
+		time.sleep(0.001)
 		current_seconds_count = time.monotonic()
 		if current_seconds_count - last_time_status_check_in > status_checkin_delay:
 			last_time_status_check_in = current_seconds_count
