@@ -39,6 +39,9 @@ def on_connect(client, userdata, flags, rc):
 	# reconnect then subscriptions will be renewed.
 	client.subscribe("$SYS/#")
 
+def on_disconnect(client, userdata, rc):
+    print("MQTT: disconnecting reason " + str(rc))
+
 # The callback for when a PUBLISH message is received from the server.
 def on_message(client, userdata, message):
 	global last_time_status_check_in
@@ -95,6 +98,7 @@ def turnOnLights():
 
 client = mqtt.Client()
 client.on_connect = on_connect
+client.on_disconnect = on_disconnect
 client.on_message = on_message
 
 client.connect("pihome.local", 1883, 60)
