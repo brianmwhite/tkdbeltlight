@@ -38,6 +38,7 @@ def on_connect(client, userdata, flags, rc):
 	# Subscribing in on_connect() means that if we lose the connection and
 	# reconnect then subscriptions will be renewed.
 	client.subscribe("$SYS/#")
+	client.subscribe("home/office/lights/beltlight/setOn")
 
 def on_disconnect(client, userdata, rc):
     print("MQTT: disconnecting reason " + str(rc))
@@ -102,7 +103,6 @@ client.on_disconnect = on_disconnect
 client.on_message = on_message
 
 client.connect("pihome.local", 1883, 60)
-client.subscribe("home/office/lights/beltlight/setOn")
 client.publish("home/office/lights/beltlight/getOn","OFF")
 turnOffLights()
 last_time_status_check_in = time.monotonic()
