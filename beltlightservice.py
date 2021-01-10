@@ -31,6 +31,9 @@ pixels_per_strip = 11
 last_time_status_check_in = 0
 status_checkin_delay = 5.0
 
+repeat_command_last_timestamp = 0
+repeat_command_last_timestamp_delay = 60.0
+
 # The callback for when the client receives a CONNACK response from the server.
 def on_connect(client, userdata, flags, rc):
 	print("MQTT: Connected with result code "+str(rc))
@@ -46,31 +49,36 @@ def on_disconnect(client, userdata, rc):
 # The callback for when a PUBLISH message is received from the server.
 def on_message(client, userdata, message):
 	global last_time_status_check_in
+	global repeat_command_last_timestamp
 	# print("message received ", str(message.payload.decode("utf-8")))
 	# print("message topic=", message.topic)
 	# print("message qos=", message.qos)
 	# print("message retain flag=", message.retain)
 
 	if message.topic == "home/office/lights/beltlight/setOn":
-		if str(message.payload.decode("utf-8")) == "ON":
-			turnOnLights()
-			client.publish("home/office/lights/beltlight/getOn","ON")
-		elif str(message.payload.decode("utf-8")) == "OFF":
-			turnOffLights()
-			client.publish("home/office/lights/beltlight/getOn","OFF")
+		repeat_command_last_timestamp = time.monotonic() + 5
 		last_time_status_check_in = time.monotonic()
 
-def turnOffLights():
+		if str(message.payload.decode("utf-8")) == "ON":
+			turnOnLights(showPrint=True)
+			client.publish("home/office/lights/beltlight/getOn","ON")
+		elif str(message.payload.decode("utf-8")) == "OFF":
+			turnOffLights(showPrint=True)
+			client.publish("home/office/lights/beltlight/getOn","OFF")
+
+def turnOffLights(showPrint = False):
 	global beltLightIsOn
 	pixels.fill((0, 0, 0, 0))
 	pixels.show()
-	print("turning lights OFF ....")
 	beltLightIsOn = False
+	if showPrint:
+		print("turning lights OFF ....")
 
-def turnOnLights():
+def turnOnLights(showPrint = False):
 	global beltLightIsOn	
-	print("turning lights ON ....")
 	beltLightIsOn = True
+	if showPrint:
+		print("turning lights ON ....")
 
 	#white
 	pixels[0:11] = [WHITE] * pixels_per_strip
@@ -124,6 +132,12 @@ try:
 				client.publish("home/office/lights/beltlight/getOn","ON")
 			else:
 				client.publish("home/office/lights/beltlight/getOn","OFF")
+		if current_seconds_count - repeat_command_last_timestamp > repeat_command_last_timestamp_delay:
+			repeat_command_last_timestamp = current_seconds_count
+			if beltLightIsOn:
+				turnOnLights(showPrint=False)
+			else:
+				turnOffLights(showPrint=False)
 
 except KeyboardInterrupt:
 	pass
