@@ -75,7 +75,7 @@ def turnOffLights(showPrint = False):
 		print("turning lights OFF ....")
 
 def turnOnLights(showPrint = False):
-	global beltLightIsOn	
+	global beltLightIsOn
 	beltLightIsOn = True
 	if showPrint:
 		print("turning lights ON ....")
@@ -97,9 +97,9 @@ def turnOnLights(showPrint = False):
 	#red
 	pixels[77:88] = [OFF] * pixels_per_strip
 	#black stripe
-	pixels[88:99] = [OFF] * pixels_per_strip	
+	pixels[88:99] = [OFF] * pixels_per_strip
 	#double black stripe
-	pixels[99:110] = [OFF] * pixels_per_strip	
+	pixels[99:110] = [OFF] * pixels_per_strip
 	#poom/black belt
 	pixels[110:121] = [OFF] * pixels_per_strip
 
