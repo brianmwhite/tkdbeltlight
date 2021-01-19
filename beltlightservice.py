@@ -112,7 +112,7 @@ def turnOnLights(showPrint=False):
     # blue
     pixels[55:66] = [BLUE] * pixels_per_strip
     # red stripe
-    pixels[66:77] = [BLUE] * pixels_per_strip
+    pixels[66:77] = [OFF] * pixels_per_strip
     # red
     pixels[77:88] = [OFF] * pixels_per_strip
     # black stripe
