@@ -1,4 +1,5 @@
 import time
+import signal
 import board
 import neopixel
 import random
@@ -33,6 +34,15 @@ status_checkin_delay = 5.0
 
 repeat_command_last_timestamp = 0
 repeat_command_last_timestamp_delay = 60.0
+
+class exit_monitor_setup:
+	exit_now_flag_raised = False
+	def __init__(self):
+    	signal.signal(signal.SIGINT, self.exit_gracefully)
+    	signal.signal(signal.SIGTERM, self.exit_gracefully)
+
+  	def exit_gracefully(self,signum, frame):
+    	self.exit_now_flag_raised = True
 
 # The callback for when the client receives a CONNACK response from the server.
 def on_connect(client, userdata, flags, rc):
@@ -105,27 +115,28 @@ def turnOnLights(showPrint = False):
 
 	pixels.show()
 
-client = mqtt.Client()
-client.on_connect = on_connect
-client.on_disconnect = on_disconnect
-client.on_message = on_message
+if __name__ == '__main__':
+    exit_monitor = exit_monitor_setup()
 
-client.connect("pihome.local", 1883, 60)
-client.publish("home/office/lights/beltlight/getOn","OFF")
-turnOffLights()
-last_time_status_check_in = time.monotonic()
+	client = mqtt.Client()
+	client.on_connect = on_connect
+	client.on_disconnect = on_disconnect
+	client.on_message = on_message
 
-client.loop_start()
-# see below, not sure if sleep is needed here, probably not
-time.sleep(0.001)
+	client.connect("pihome.local", 1883, 60)
+	client.publish("home/office/lights/beltlight/getOn","OFF")
+	turnOffLights()
+	last_time_status_check_in = time.monotonic()
 
-try:
+	client.loop_start()
+	# see below, not sure if sleep is needed here, probably not
+	time.sleep(0.001)
 
-	while True:
-		# added time.sleep 1 ms after seeing 100% CPU usage
-		# found this solution https://stackoverflow.com/a/41749754
-		time.sleep(0.001)
-		current_seconds_count = time.monotonic()
+	while not exit_monitor.exit_now_flag_raised:
+    	# added time.sleep 1 ms after seeing 100% CPU usage
+        # found this solution https://stackoverflow.com/a/41749754
+        time.sleep(0.001)
+        current_seconds_count = time.monotonic()
 		if current_seconds_count - last_time_status_check_in > status_checkin_delay:
 			last_time_status_check_in = current_seconds_count
 			if beltLightIsOn:
@@ -139,9 +150,7 @@ try:
 			else:
 				turnOffLights(showPrint=False)
 
-except KeyboardInterrupt:
-	pass
-
-client.loop_stop()
-client.disconnect()
-pixels.deinit()
+    client.loop_stop()
+    client.disconnect()
+	pixels.deinit()
+    print("belt light noise service ended")
