@@ -6,7 +6,7 @@ import os
 SERVICE_NAME = "beltlight"
 
 def main():
-    print("beltlight service commands...")
+    print(f"{SERVICE_NAME} service commands...")
     
     terminal_menu = TerminalMenu(["stop", "restart", "logs", "start", "status"])
     menu_entry_index = terminal_menu.show()
