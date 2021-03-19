@@ -5,6 +5,19 @@ import neopixel
 import random
 import paho.mqtt.client as mqtt
 
+# sudo ./deploy_local.sh
+
+# sudo systemctl start beltlight
+# sudo systemctl stop beltlight
+# sudo systemctl restart beltlight
+
+# systemctl status beltlight
+# journalctl -u beltlight -f
+
+# sudo systemctl disable beltlight
+# sudo cp beltlight.service /etc/systemd/system/
+# sudo systemctl enable beltlight
+
 # On a Raspberry pi, use this instead, not all pins are supported
 pixel_pin = board.D18
 
