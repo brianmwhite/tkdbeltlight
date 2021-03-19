@@ -4,6 +4,7 @@ import board
 import neopixel
 import random
 import paho.mqtt.client as mqtt
+import pickle
 
 # sudo ./deploy_local.sh
 
@@ -18,12 +19,28 @@ import paho.mqtt.client as mqtt
 # sudo cp beltlight.service /etc/systemd/system/
 # sudo systemctl enable beltlight
 
+MQTT_HOST = "pihome.local"
+MQTT_PORT = 1883
+
+MQTT_SETON_PATH = "home/office/lights/beltlight/setOn"
+MQTT_GETON_PATH = "home/office/lights/beltlight/getOn"
+
+ON_VALUE = "ON"
+OFF_VALUE = "OFF"
+
+PICKLE_FILE_LOCATION = "/home/pi/beltlight/beltlight.pickle"
+
+last_time_status_check_in = 0
+status_checkin_delay = 5.0
+
+belt_light_state = {'belt_light_is_on': False}
+
 # On a Raspberry pi, use this instead, not all pins are supported
 pixel_pin = board.D18
 
 # The number of NeoPixels
 num_pixels = 121
-beltLightIsOn = False
+pixels_per_strip = 11
 
 # The order of the pixel colors - RGB or GRB. Some NeoPixels have red and green reversed!
 # For RGBW NeoPixels, simply change the ORDER to RGBW or GRBW.
@@ -39,14 +56,6 @@ BLUE = (0, 0, 255, 0)
 GREEN = (0, 255, 0, 0)
 YELLOW = (255, 255, 0, 0)
 OFF = (0, 0, 0, 0)
-
-pixels_per_strip = 11
-
-last_time_status_check_in = 0
-status_checkin_delay = 5.0
-
-repeat_command_last_timestamp = 0
-repeat_command_last_timestamp_delay = 60.0
 
 
 class exit_monitor_setup:
@@ -68,7 +77,7 @@ def on_connect(client, userdata, flags, rc):
     # Subscribing in on_connect() means that if we lose the connection and
     # reconnect then subscriptions will be renewed.
     client.subscribe("$SYS/#")
-    client.subscribe("home/office/lights/beltlight/setOn")
+    client.subscribe(MQTT_SETON_PATH)
 
 
 def on_disconnect(client, userdata, rc):
@@ -79,36 +88,33 @@ def on_disconnect(client, userdata, rc):
 
 def on_message(client, userdata, message):
     global last_time_status_check_in
-    global repeat_command_last_timestamp
-    # print("message received ", str(message.payload.decode("utf-8")))
-    # print("message topic=", message.topic)
-    # print("message qos=", message.qos)
-    # print("message retain flag=", message.retain)
 
-    if message.topic == "home/office/lights/beltlight/setOn":
-        repeat_command_last_timestamp = time.monotonic() + 5
+    if message.topic == MQTT_SETON_PATH:
         last_time_status_check_in = time.monotonic()
 
-        if str(message.payload.decode("utf-8")) == "ON":
+        if str(message.payload.decode("utf-8")) == ON_VALUE:
             turnOnLights(showPrint=True)
-            client.publish("home/office/lights/beltlight/getOn", "ON")
-        elif str(message.payload.decode("utf-8")) == "OFF":
+            client.publish(MQTT_GETON_PATH, ON_VALUE)
+        elif str(message.payload.decode("utf-8")) == OFF_VALUE:
             turnOffLights(showPrint=True)
-            client.publish("home/office/lights/beltlight/getOn", "OFF")
+            client.publish(MQTT_GETON_PATH, OFF_VALUE)
 
 
 def turnOffLights(showPrint=False):
-    global beltLightIsOn
+    global belt_light_state
+    belt_light_state['belt_light_is_on'] = False
+    
     pixels.fill((0, 0, 0, 0))
     pixels.show()
-    beltLightIsOn = False
+
     if showPrint:
         print("turning lights OFF ....")
 
 
 def turnOnLights(showPrint=False):
-    global beltLightIsOn
-    beltLightIsOn = True
+    global belt_light_state
+    belt_light_state['belt_light_is_on'] = True
+
     if showPrint:
         print("turning lights ON ....")
 
@@ -139,43 +145,50 @@ def turnOnLights(showPrint=False):
 
 
 if __name__ == '__main__':
-	exit_monitor = exit_monitor_setup()
+    exit_monitor = exit_monitor_setup()
+    
+    try:
+        with open(PICKLE_FILE_LOCATION, 'rb') as datafile:
+            belt_light_state = pickle.load(datafile)
+            print(f"loaded beltlight state={belt_light_state['belt_light_is_on']}")
+    except (FileNotFoundError, pickle.UnpicklingError):
+        print("failed to load beltlight state, default=OFF")
+        belt_light_state['belt_light_is_on'] = False
+        pass
 	
-	client = mqtt.Client()
-	client.on_connect = on_connect
-	client.on_disconnect = on_disconnect
-	client.on_message = on_message
+    client = mqtt.Client()
+    client.on_connect = on_connect
+    client.on_disconnect = on_disconnect
+    client.on_message = on_message
 
-	client.connect("pihome.local", 1883, 60)
-	client.publish("home/office/lights/beltlight/getOn", "OFF")
-	turnOffLights()
-	last_time_status_check_in = time.monotonic()
+    client.connect(MQTT_HOST, MQTT_PORT, 60)
+    client.loop_start()
+    # see below, not sure if sleep is needed here, probably not
+    time.sleep(0.001)
 
-	client.loop_start()
-	# see below, not sure if sleep is needed here, probably not
-	time.sleep(0.001)
+    print("started belt light service...")
+    last_time_status_check_in = time.monotonic()
 
-	while not exit_monitor.exit_now_flag_raised:
-		# added time.sleep 1 ms after seeing 100% CPU usage
-		# found this solution https://stackoverflow.com/a/41749754
-		time.sleep(0.001)
-		current_seconds_count = time.monotonic()
-		
-		if current_seconds_count - last_time_status_check_in > status_checkin_delay:
-			last_time_status_check_in = current_seconds_count
-			if beltLightIsOn:
-				client.publish("home/office/lights/beltlight/getOn", "ON")
-			else:
-				client.publish("home/office/lights/beltlight/getOn", "OFF")
-		
-		if current_seconds_count - repeat_command_last_timestamp > repeat_command_last_timestamp_delay:
-			repeat_command_last_timestamp = current_seconds_count
-			if beltLightIsOn:
-				turnOnLights(showPrint=False)
-			else:
-				turnOffLights(showPrint=False)
+    if belt_light_state['belt_light_is_on']:
+        turnOnLights()
+    else:
+        turnOffLights()
 
-	client.loop_stop()
-	client.disconnect()
-	pixels.deinit()
-	print("belt light noise service ended")
+    while not exit_monitor.exit_now_flag_raised:
+        # added time.sleep 1 ms after seeing 100% CPU usage
+        # found this solution https://stackoverflow.com/a/41749754
+        time.sleep(0.001)
+        current_seconds_count = time.monotonic()
+
+        if current_seconds_count - last_time_status_check_in > status_checkin_delay:
+            last_time_status_check_in = current_seconds_count
+
+            if belt_light_state['belt_light_is_on']:
+                client.publish(MQTT_GETON_PATH, ON_VALUE)
+            else:
+                client.publish(MQTT_GETON_PATH, OFF_VALUE)
+
+    client.loop_stop()
+    client.disconnect()
+    pixels.deinit()
+    print("belt light noise service ended")
