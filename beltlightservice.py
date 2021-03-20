@@ -20,6 +20,12 @@ import configparser
 # sudo cp beltlight.service /etc/systemd/system/
 # sudo systemctl enable beltlight
 
+# git commands to ignore changes specific file
+# git update-index config.ini
+# git update-index --skip-worktree config.ini
+# git update-index --no-skip-worktree config.ini
+# git ls-files -v|grep '^S'
+
 config = configparser.ConfigParser()
 config.read('/home/pi/beltlight/config.ini')
 
