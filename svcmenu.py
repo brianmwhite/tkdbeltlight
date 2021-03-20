@@ -2,26 +2,14 @@
 
 from simple_term_menu import TerminalMenu
 import os
-import signal
 
 SERVICE_NAME = "beltlight"
 
-class exit_monitor_setup:
-    exit_now_flag_raised = False
-
-    def __init__(self):
-        signal.signal(signal.SIGINT, self.exit_gracefully)
-        signal.signal(signal.SIGTERM, self.exit_gracefully)
-
-    def exit_gracefully(self, signum, frame):
-        self.exit_now_flag_raised = True
-
-
 if __name__ == "__main__":
-    exit_monitor = exit_monitor_setup()
+    main_menu_exit = False
 
-    while not exit_monitor.exit_now_flag_raised:
-        terminal_menu = TerminalMenu(["stop", "restart", "logs", "start", "status"])
+    while not main_menu_exit:
+        terminal_menu = TerminalMenu(["stop", "restart", "logs", "start", "status", "quit"])
         menu_entry_index = terminal_menu.show()
 
         if menu_entry_index == 0:
@@ -34,3 +22,5 @@ if __name__ == "__main__":
             os.system(f"sudo systemctl start {SERVICE_NAME}")
         elif menu_entry_index == 4:
             os.system(f"systemctl status {SERVICE_NAME}")
+        elif menu_entry_index == 5: 
+            main_menu_exit = True
