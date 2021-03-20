@@ -152,27 +152,27 @@ def turnOnLights(change_state=True):
             pass
 
     # white
-    pixels[0:11] = ROW_01 * pixels_per_strip
+    pixels[0:11] = [ROW_01] * pixels_per_strip
     # yellow
-    pixels[11:22] = ROW_02 * pixels_per_strip
+    pixels[11:22] = [ROW_02] * pixels_per_strip
     # green stripe
-    pixels[22:33] = ROW_03 * pixels_per_strip
+    pixels[22:33] = [ROW_03] * pixels_per_strip
     # green
-    pixels[33:44] = ROW_04 * pixels_per_strip
+    pixels[33:44] = [ROW_04] * pixels_per_strip
     # blue stripe
-    pixels[44:55] = ROW_05 * pixels_per_strip
+    pixels[44:55] = [ROW_05] * pixels_per_strip
     # blue
-    pixels[55:66] = ROW_06 * pixels_per_strip
+    pixels[55:66] = [ROW_06] * pixels_per_strip
     # red stripe
-    pixels[66:77] = ROW_07 * pixels_per_strip
+    pixels[66:77] = [ROW_07] * pixels_per_strip
     # red
-    pixels[77:88] = ROW_08 * pixels_per_strip
+    pixels[77:88] = [ROW_08] * pixels_per_strip
     # black stripe
-    pixels[88:99] = ROW_09 * pixels_per_strip
+    pixels[88:99] = [ROW_09] * pixels_per_strip
     # double black stripe
-    pixels[99:110] = ROW_10 * pixels_per_strip
+    pixels[99:110] = [ROW_10] * pixels_per_strip
     # poom/black belt
-    pixels[110:121] = ROW_11 * pixels_per_strip
+    pixels[110:121] = [ROW_11] * pixels_per_strip
 
     pixels.show()
 
