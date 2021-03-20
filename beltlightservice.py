@@ -93,30 +93,44 @@ def on_message(client, userdata, message):
         last_time_status_check_in = time.monotonic()
 
         if str(message.payload.decode("utf-8")) == ON_VALUE:
-            turnOnLights(showPrint=True)
+            turnOnLights()
             client.publish(MQTT_GETON_PATH, ON_VALUE)
         elif str(message.payload.decode("utf-8")) == OFF_VALUE:
-            turnOffLights(showPrint=True)
+            turnOffLights()
             client.publish(MQTT_GETON_PATH, OFF_VALUE)
 
 
-def turnOffLights(showPrint=False):
+def turnOffLights(change_state=True):
     global belt_light_state
     belt_light_state['belt_light_is_on'] = False
+
+    if change_state:
+        print("turning lights OFF ....")
+        try:
+            with open(PICKLE_FILE_LOCATION, 'wb') as datafile:
+                pickle.dump(belt_light_state, datafile)
+                print(
+                    f"saved beltlight state={belt_light_state['belt_light_is_on']}")
+        except:
+            pass
     
     pixels.fill((0, 0, 0, 0))
     pixels.show()
 
-    if showPrint:
-        print("turning lights OFF ....")
 
-
-def turnOnLights(showPrint=False):
+def turnOnLights(change_state=True):
     global belt_light_state
     belt_light_state['belt_light_is_on'] = True
 
-    if showPrint:
+    if change_state:
         print("turning lights ON ....")
+        try:
+            with open(PICKLE_FILE_LOCATION, 'wb') as datafile:
+                pickle.dump(belt_light_state, datafile)
+                print(
+                    f"saved beltlight state={belt_light_state['belt_light_is_on']}")
+        except:
+            pass
 
     # white
     pixels[0:11] = [WHITE] * pixels_per_strip
