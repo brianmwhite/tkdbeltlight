@@ -5,6 +5,7 @@ import neopixel
 import random
 import paho.mqtt.client as mqtt
 import pickle
+import configparser
 
 # sudo ./deploy_local.sh
 
@@ -19,19 +20,44 @@ import pickle
 # sudo cp beltlight.service /etc/systemd/system/
 # sudo systemctl enable beltlight
 
-MQTT_HOST = "pihome.local"
-MQTT_PORT = 1883
+# inline_comment_prefixes=(';',) -- not recommended but easier in the
+#  config file to see what color goes with what hex value
+config = configparser.ConfigParser(inline_comment_prefixes=(';',))
+config.read('/home/pi/beltlight/config.ini')
 
-MQTT_SETON_PATH = "home/office/lights/beltlight/setOn"
-MQTT_GETON_PATH = "home/office/lights/beltlight/getOn"
+config_settings = config['SETTINGS']
 
-ON_VALUE = "ON"
-OFF_VALUE = "OFF"
+MQTT_HOST = config_settings.get('MQTT_HOST')
+MQTT_PORT = config_settings.getint('MQTT_PORT')
 
-PICKLE_FILE_LOCATION = "/home/pi/beltlight/beltlight.pickle"
+MQTT_SETON_PATH = config_settings.get("MQTT_SETON_PATH")
+MQTT_GETON_PATH = config_settings.get("MQTT_GETON_PATH")
 
-last_time_status_check_in = 0
-status_checkin_delay = 5.0
+ON_VALUE = config_settings.get("ON_VALUE")
+OFF_VALUE = config_settings.get("OFF_VALUE")
+
+PICKLE_FILE_LOCATION = config_settings.get("PICKLE_FILE_LOCATION")
+
+last_time_status_check_in = 0.0
+status_checkin_delay = config_settings.getfloat("status_checkin_delay")
+
+# python conversion 
+# tuple(bytes.fromhex("ffff0000")
+# bytes((255, 255, 0, 0)).hex()
+
+row_colors = config['ROW_COLORS']
+
+ROW_11 = tuple(bytes.fromhex(row_colors.get("ROW_11")))
+ROW_10 = tuple(bytes.fromhex(row_colors.get("ROW_10")))
+ROW_09 = tuple(bytes.fromhex(row_colors.get("ROW_09")))
+ROW_08 = tuple(bytes.fromhex(row_colors.get("ROW_08")))
+ROW_07 = tuple(bytes.fromhex(row_colors.get("ROW_07")))
+ROW_06 = tuple(bytes.fromhex(row_colors.get("ROW_06")))
+ROW_05 = tuple(bytes.fromhex(row_colors.get("ROW_05")))
+ROW_04 = tuple(bytes.fromhex(row_colors.get("ROW_04")))
+ROW_03 = tuple(bytes.fromhex(row_colors.get("ROW_03")))
+ROW_02 = tuple(bytes.fromhex(row_colors.get("ROW_02")))
+ROW_01 = tuple(bytes.fromhex(row_colors.get("ROW_01")))
 
 belt_light_state = {'belt_light_is_on': False}
 
@@ -49,13 +75,6 @@ ORDER = neopixel.GRBW
 pixels = neopixel.NeoPixel(
     pixel_pin, num_pixels, brightness=.50, auto_write=False, pixel_order=ORDER
 )
-
-WHITE = (0, 0, 0, 255)
-RED = (255, 0, 0, 0)
-BLUE = (0, 0, 255, 0)
-GREEN = (0, 255, 0, 0)
-YELLOW = (255, 255, 0, 0)
-OFF = (0, 0, 0, 0)
 
 
 class exit_monitor_setup:
@@ -133,27 +152,27 @@ def turnOnLights(change_state=True):
             pass
 
     # white
-    pixels[0:11] = [WHITE] * pixels_per_strip
+    pixels[0:11] = ROW_01 * pixels_per_strip
     # yellow
-    pixels[11:22] = [YELLOW] * pixels_per_strip
+    pixels[11:22] = ROW_02 * pixels_per_strip
     # green stripe
-    pixels[22:33] = [YELLOW] * pixels_per_strip
+    pixels[22:33] = ROW_03 * pixels_per_strip
     # green
-    pixels[33:44] = [GREEN] * pixels_per_strip
+    pixels[33:44] = ROW_04 * pixels_per_strip
     # blue stripe
-    pixels[44:55] = [GREEN] * pixels_per_strip
+    pixels[44:55] = ROW_05 * pixels_per_strip
     # blue
-    pixels[55:66] = [BLUE] * pixels_per_strip
+    pixels[55:66] = ROW_06 * pixels_per_strip
     # red stripe
-    pixels[66:77] = [BLUE] * pixels_per_strip
+    pixels[66:77] = ROW_07 * pixels_per_strip
     # red
-    pixels[77:88] = [OFF] * pixels_per_strip
+    pixels[77:88] = ROW_08 * pixels_per_strip
     # black stripe
-    pixels[88:99] = [OFF] * pixels_per_strip
+    pixels[88:99] = ROW_09 * pixels_per_strip
     # double black stripe
-    pixels[99:110] = [OFF] * pixels_per_strip
+    pixels[99:110] = ROW_10 * pixels_per_strip
     # poom/black belt
-    pixels[110:121] = [OFF] * pixels_per_strip
+    pixels[110:121] = ROW_11 * pixels_per_strip
 
     pixels.show()
 
