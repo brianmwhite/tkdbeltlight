@@ -20,9 +20,7 @@ import configparser
 # sudo cp beltlight.service /etc/systemd/system/
 # sudo systemctl enable beltlight
 
-# inline_comment_prefixes=(';',) -- not recommended but easier in the
-#  config file to see what color goes with what hex value
-config = configparser.ConfigParser(inline_comment_prefixes=(';',))
+config = configparser.ConfigParser()
 config.read('/home/pi/beltlight/config.ini')
 
 config_settings = config['SETTINGS']
