@@ -16,16 +16,21 @@ if [ $(git rev-parse HEAD) != $(git rev-parse @{u}) ]; then
         esac
     done
 
-    echo "stopped $SERVICENAME service"
+    echo "stopping $SERVICENAME service"
+    systemctl stop $SERVICENAME
 
     if [ "$DELETEPICKLE" = true ] ; then
+        echo "deleting $SERVICENAME.pickle file"
         rm $SERVICENAME.pickle
-        echo "deleted $SERVICENAME.pickle file"
     fi
 
+    echo "updating code from repo"
     git pull
 
+    echo "starting $SERVICENAME service"
     systemctl start $SERVICENAME
+
+    echo "viewing logs for $SERVICENAME service"
 	journalctl -u $SERVICENAME -f
 else
     echo "$SERVICENAME already up-to-date"
