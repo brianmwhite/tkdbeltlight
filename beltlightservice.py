@@ -7,7 +7,8 @@ import paho.mqtt.client as mqtt
 import pickle
 import configparser
 
-# sudo ./deploy_local.sh
+# ./deploy_local.sh
+# ./svcmenu.py
 
 # sudo systemctl start beltlight
 # sudo systemctl stop beltlight
