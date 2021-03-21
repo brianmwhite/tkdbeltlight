@@ -1,11 +1,12 @@
-import time
+import configparser
+import pickle
+import random
 import signal
+import time
+
 import board
 import neopixel
-import random
 import paho.mqtt.client as mqtt
-import pickle
-import configparser
 
 # ./deploy_local.sh
 # ./svcmenu.py
@@ -42,9 +43,10 @@ ON_VALUE = config_settings.get("ON_VALUE")
 OFF_VALUE = config_settings.get("OFF_VALUE")
 
 PICKLE_FILE_LOCATION = config_settings.get("PICKLE_FILE_LOCATION")
+DEVICE_STATE = {'light_is_on': False}
 
-last_time_status_check_in = 0.0
 status_checkin_delay = config_settings.getfloat("status_checkin_delay")
+last_time_status_check_in = 0.0
 
 # python conversion 
 # tuple(bytes.fromhex("ffff0000")
@@ -64,21 +66,17 @@ ROW_03 = tuple(bytes.fromhex(row_colors.get("ROW_03")))
 ROW_02 = tuple(bytes.fromhex(row_colors.get("ROW_02")))
 ROW_01 = tuple(bytes.fromhex(row_colors.get("ROW_01")))
 
-belt_light_state = {'belt_light_is_on': False}
 
-# On a Raspberry pi, use this instead, not all pins are supported
-pixel_pin = board.D18
 
-# The number of NeoPixels
-num_pixels = 121
-pixels_per_strip = 11
+# neopixel setup
+PIXEL_DATA_PIN = board.D18
+NUMBER_OF_TOTAL_LINKED_PIXELS = 121
+PIXELS_PER_UNIT = 11
 
-# The order of the pixel colors - RGB or GRB. Some NeoPixels have red and green reversed!
-# For RGBW NeoPixels, simply change the ORDER to RGBW or GRBW.
 ORDER = neopixel.GRBW
 
 pixels = neopixel.NeoPixel(
-    pixel_pin, num_pixels, brightness=.50, auto_write=False, pixel_order=ORDER
+    PIXEL_DATA_PIN, NUMBER_OF_TOTAL_LINKED_PIXELS, brightness=1.0, auto_write=False, pixel_order=ORDER
 )
 
 
@@ -92,9 +90,8 @@ class exit_monitor_setup:
     def exit_gracefully(self, signum, frame):
         self.exit_now_flag_raised = True
 
+
 # The callback for when the client receives a CONNACK response from the server.
-
-
 def on_connect(client, userdata, flags, rc):
     print("MQTT: Connected with result code "+str(rc))
 
@@ -104,12 +101,12 @@ def on_connect(client, userdata, flags, rc):
     client.subscribe(MQTT_SETON_PATH)
 
 
+# The callback for when a DISCONNECT message is received from the server.
 def on_disconnect(client, userdata, rc):
     print("MQTT: disconnecting reason " + str(rc))
 
+
 # The callback for when a PUBLISH message is received from the server.
-
-
 def on_message(client, userdata, message):
     global last_time_status_check_in
 
@@ -117,24 +114,24 @@ def on_message(client, userdata, message):
         last_time_status_check_in = time.monotonic()
 
         if str(message.payload.decode("utf-8")) == ON_VALUE:
-            turnOnLights()
+            turn_on_lights()
             client.publish(MQTT_GETON_PATH, ON_VALUE)
         elif str(message.payload.decode("utf-8")) == OFF_VALUE:
-            turnOffLights()
+            turn_off_lights()
             client.publish(MQTT_GETON_PATH, OFF_VALUE)
 
 
-def turnOffLights(change_state=True):
-    global belt_light_state
-    belt_light_state['belt_light_is_on'] = False
+def turn_off_lights(change_state=True):
+    global DEVICE_STATE
+    DEVICE_STATE['light_is_on'] = False
 
     if change_state:
         print("turning lights OFF ....")
         try:
             with open(PICKLE_FILE_LOCATION, 'wb') as datafile:
-                pickle.dump(belt_light_state, datafile)
+                pickle.dump(DEVICE_STATE, datafile)
                 print(
-                    f"saved beltlight state={belt_light_state['belt_light_is_on']}")
+                    f"saved light state={DEVICE_STATE['light_is_on']}")
         except:
             pass
     
@@ -142,42 +139,42 @@ def turnOffLights(change_state=True):
     pixels.show()
 
 
-def turnOnLights(change_state=True):
-    global belt_light_state
-    belt_light_state['belt_light_is_on'] = True
+def turn_on_lights(change_state=True):
+    global DEVICE_STATE
+    DEVICE_STATE['light_is_on'] = True
 
     if change_state:
         print("turning lights ON ....")
         try:
             with open(PICKLE_FILE_LOCATION, 'wb') as datafile:
-                pickle.dump(belt_light_state, datafile)
+                pickle.dump(DEVICE_STATE, datafile)
                 print(
-                    f"saved beltlight state={belt_light_state['belt_light_is_on']}")
+                    f"saved light state={DEVICE_STATE['light_is_on']}")
         except:
             pass
 
     # white
-    pixels[0:11] = [ROW_01] * pixels_per_strip
+    pixels[0:11] = [ROW_01] * PIXELS_PER_UNIT
     # yellow
-    pixels[11:22] = [ROW_02] * pixels_per_strip
+    pixels[11:22] = [ROW_02] * PIXELS_PER_UNIT
     # green stripe
-    pixels[22:33] = [ROW_03] * pixels_per_strip
+    pixels[22:33] = [ROW_03] * PIXELS_PER_UNIT
     # green
-    pixels[33:44] = [ROW_04] * pixels_per_strip
+    pixels[33:44] = [ROW_04] * PIXELS_PER_UNIT
     # blue stripe
-    pixels[44:55] = [ROW_05] * pixels_per_strip
+    pixels[44:55] = [ROW_05] * PIXELS_PER_UNIT
     # blue
-    pixels[55:66] = [ROW_06] * pixels_per_strip
+    pixels[55:66] = [ROW_06] * PIXELS_PER_UNIT
     # red stripe
-    pixels[66:77] = [ROW_07] * pixels_per_strip
+    pixels[66:77] = [ROW_07] * PIXELS_PER_UNIT
     # red
-    pixels[77:88] = [ROW_08] * pixels_per_strip
+    pixels[77:88] = [ROW_08] * PIXELS_PER_UNIT
     # black stripe
-    pixels[88:99] = [ROW_09] * pixels_per_strip
+    pixels[88:99] = [ROW_09] * PIXELS_PER_UNIT
     # double black stripe
-    pixels[99:110] = [ROW_10] * pixels_per_strip
+    pixels[99:110] = [ROW_10] * PIXELS_PER_UNIT
     # poom/black belt
-    pixels[110:121] = [ROW_11] * pixels_per_strip
+    pixels[110:121] = [ROW_11] * PIXELS_PER_UNIT
 
     pixels.show()
 
@@ -187,11 +184,11 @@ if __name__ == '__main__':
     
     try:
         with open(PICKLE_FILE_LOCATION, 'rb') as datafile:
-            belt_light_state = pickle.load(datafile)
-            print(f"loaded beltlight state={belt_light_state['belt_light_is_on']}")
+            DEVICE_STATE = pickle.load(datafile)
+            print(f"loaded light state={DEVICE_STATE['light_is_on']}")
     except (FileNotFoundError, pickle.UnpicklingError):
-        print("failed to load beltlight state, default=OFF")
-        belt_light_state['belt_light_is_on'] = False
+        print("failed to load light state, default=OFF")
+        DEVICE_STATE['light_is_on'] = False
         pass
 	
     client = mqtt.Client()
@@ -204,13 +201,13 @@ if __name__ == '__main__':
     # see below, not sure if sleep is needed here, probably not
     time.sleep(0.001)
 
-    print("started belt light service...")
+    print("started light service...")
     last_time_status_check_in = time.monotonic()
 
-    if belt_light_state['belt_light_is_on']:
-        turnOnLights()
+    if DEVICE_STATE['light_is_on']:
+        turn_on_lights()
     else:
-        turnOffLights()
+        turn_off_lights()
 
     while not exit_monitor.exit_now_flag_raised:
         # added time.sleep 1 ms after seeing 100% CPU usage
@@ -221,7 +218,7 @@ if __name__ == '__main__':
         if current_seconds_count - last_time_status_check_in > status_checkin_delay:
             last_time_status_check_in = current_seconds_count
 
-            if belt_light_state['belt_light_is_on']:
+            if DEVICE_STATE['light_is_on']:
                 client.publish(MQTT_GETON_PATH, ON_VALUE)
             else:
                 client.publish(MQTT_GETON_PATH, OFF_VALUE)
@@ -229,4 +226,4 @@ if __name__ == '__main__':
     client.loop_stop()
     client.disconnect()
     pixels.deinit()
-    print("belt light noise service ended")
+    print("light service ended")
