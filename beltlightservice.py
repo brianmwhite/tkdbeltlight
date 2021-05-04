@@ -1,6 +1,5 @@
 import configparser
 import pickle
-import random
 import signal
 import time
 
@@ -48,7 +47,7 @@ DEVICE_STATE = {'light_is_on': False}
 status_checkin_delay = config_settings.getfloat("status_checkin_delay")
 last_time_status_check_in = 0.0
 
-# python conversion 
+# python conversion
 # tuple(bytes.fromhex("ffff0000")
 # bytes((255, 255, 0, 0)).hex()
 
@@ -65,7 +64,6 @@ ROW_04 = tuple(bytes.fromhex(row_colors.get("ROW_04")))
 ROW_03 = tuple(bytes.fromhex(row_colors.get("ROW_03")))
 ROW_02 = tuple(bytes.fromhex(row_colors.get("ROW_02")))
 ROW_01 = tuple(bytes.fromhex(row_colors.get("ROW_01")))
-
 
 
 # neopixel setup
@@ -93,7 +91,7 @@ class exit_monitor_setup:
 
 # The callback for when the client receives a CONNACK response from the server.
 def on_connect(client, userdata, flags, rc):
-    print("MQTT: Connected with result code "+str(rc))
+    print("MQTT: Connected with result code " + str(rc))
 
     # Subscribing in on_connect() means that if we lose the connection and
     # reconnect then subscriptions will be renewed.
@@ -132,9 +130,16 @@ def turn_off_lights(change_state=True):
                 pickle.dump(DEVICE_STATE, datafile)
                 print(
                     f"saved light state={DEVICE_STATE['light_is_on']}")
-        except:
+        except pickle.UnpicklingError as e:
+            print(e)
             pass
-    
+        except (AttributeError, EOFError, ImportError, IndexError) as e:
+            print(e)
+            pass
+        except Exception as e:
+            print(e)
+            pass
+
     pixels.fill((0, 0, 0, 0))
     pixels.show()
 
@@ -150,7 +155,14 @@ def turn_on_lights(change_state=True):
                 pickle.dump(DEVICE_STATE, datafile)
                 print(
                     f"saved light state={DEVICE_STATE['light_is_on']}")
-        except:
+        except pickle.UnpicklingError as e:
+            print(e)
+            pass
+        except (AttributeError, EOFError, ImportError, IndexError) as e:
+            print(e)
+            pass
+        except Exception as e:
+            print(e)
             pass
 
     # white
@@ -181,7 +193,7 @@ def turn_on_lights(change_state=True):
 
 if __name__ == '__main__':
     exit_monitor = exit_monitor_setup()
-    
+
     try:
         with open(PICKLE_FILE_LOCATION, 'rb') as datafile:
             DEVICE_STATE = pickle.load(datafile)
@@ -190,7 +202,7 @@ if __name__ == '__main__':
         print("failed to load light state, default=OFF")
         DEVICE_STATE['light_is_on'] = False
         pass
-	
+
     client = mqtt.Client()
     client.on_connect = on_connect
     client.on_disconnect = on_disconnect
