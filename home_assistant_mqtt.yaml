@@ -1,0 +1,12 @@
+mqtt:
+  switch:
+    - unique_id: belt_light_switch
+      name: "Belt Light"
+      state_topic: "homeassistant/switch/beltlight"
+      command_topic: "homeassistant/switch/beltlight/set"
+      payload_on: "ON"
+      payload_off: "OFF"
+      state_on: "ON"
+      state_off: "OFF"
+      optimistic: false
+      qos: 0
